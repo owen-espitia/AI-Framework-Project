@@ -4,6 +4,11 @@ from pydantic import BaseModel
 app = FastAPI()
 
 # Your Pydantic model(s) here
+class Item(BaseModel):
+    name: str
+    price: float
+    description: str
+
 
 # In-memory storage
 items_db: dict[int, dict] = {}
@@ -26,15 +31,15 @@ def get_item(item_id: str):
     return item
 
 @app.post("/items", status_code=201)
-def create_item(item: dict):
+def create_item(item: Item):
     global next_id
     item_id = next_id
-    items_db[item_id] = {**item}
+    items_db[item_id] = item.model_dump()
     next_id += 1
-    return {"id": item_id, **item}
+    return {"id": item_id, "name": item.name}
 
 @app.put("/items/{item_id}", status_code=200)
-def update_item(new_item: dict, item_id: str):
+def update_item(new_item: Item, item_id: str):
     try:
         items_db[int(item_id)] = new_item
         return {"id": item_id, "updated_item": new_item}
