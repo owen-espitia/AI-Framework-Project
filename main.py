@@ -1,7 +1,16 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Your Pydantic model(s) here
 class Item(BaseModel):
@@ -10,14 +19,15 @@ class Item(BaseModel):
     description: str
 
 
+
 # In-memory storage
 items_db: dict[int, dict] = {}
 next_id: int = 1
 
 # Your endpoints here
-@app.get("/", status_code=200)
-def landing_page():
-    return "Welcome to my first python API!"
+# @app.get("/", status_code=200)
+# def landing_page():
+#     return "Welcome to my first python API!"
 
 @app.get("/items", status_code=200)
 def read_items():
@@ -53,3 +63,5 @@ def delete_item(item_id: str):
         return {"message": f"Item with ID {item_id} deleted successfully."}
     except:
         raise HTTPException(status_code=404, detail="No item with specified ID")
+
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
