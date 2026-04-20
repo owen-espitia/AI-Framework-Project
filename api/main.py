@@ -25,17 +25,14 @@ items_db: dict[int, dict] = {}
 next_id: int = 1
 
 # Your endpoints here
-# @app.get("/", status_code=200)
-# def landing_page():
-#     return "Welcome to my first python API!"
 
 @app.get("/items", status_code=200)
 def read_items():
     return items_db
 
 @app.get("/items/{item_id}", status_code=200)
-def get_item(item_id: str):
-    item = items_db.get(int(item_id))
+def get_item(item_id: int):
+    item = items_db.get(item_id)
     if item is None:
         raise HTTPException(status_code=404, detail="No items with that ID")
     return item
@@ -49,19 +46,17 @@ def create_item(item: Item):
     return {"id": item_id, "name": item.name}
 
 @app.put("/items/{item_id}", status_code=200)
-def update_item(new_item: Item, item_id: str):
-    try:
-        items_db[int(item_id)] = new_item
-        return {"id": item_id, "updated_item": new_item}
-    except:
+def update_item(new_item: Item, item_id: int):
+    if item_id not in items_db:
         raise HTTPException(status_code=404, detail="No item with specified ID")
+    items_db[item_id] = new_item.model_dump()
+    return {"id": item_id, "updated_item": new_item.model_dump()}
 
 @app.delete("/items/{item_id}", status_code=200)
-def delete_item(item_id: str):
-    try:
-        del items_db[int(item_id)]
-        return {"message": f"Item with ID {item_id} deleted successfully."}
-    except:
+def delete_item(item_id: int):
+    if item_id not in items_db:
         raise HTTPException(status_code=404, detail="No item with specified ID")
+    del items_db[item_id]
+    return {"message": f"Item with ID {item_id} deleted successfully."}
 
 app.mount("/", StaticFiles(directory="front-end/static", html=True), name="static")
