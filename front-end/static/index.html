@@ -54,16 +54,16 @@
 
         function renderItems(items) {
             itemsList.innerHTML = '';
-            const itemEntries = Object.entries(items || {});
 
-            if (itemEntries.length === 0) {
+            if (!items || items.length === 0) {
                 itemsEmpty.textContent = 'No items yet. Add one using the form above.';
                 return;
             }
 
             itemsEmpty.textContent = '';
 
-            itemEntries.forEach(([id, item]) => {
+            items.forEach((item) => {
+                const id = item._id || item.id; // MongoDB uses _id, but we'll use id in responses
                 const card = document.createElement('div');
                 card.className = 'item-card';
 

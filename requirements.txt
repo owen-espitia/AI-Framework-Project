@@ -9,6 +9,7 @@ httptools==0.7.1
 idna==3.11
 pydantic==2.12.5
 pydantic_core==2.41.5
+pymongo==4.6.0
 python-dotenv==1.2.2
 PyYAML==6.0.3
 starlette==1.0.0

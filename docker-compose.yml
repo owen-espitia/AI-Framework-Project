@@ -1,0 +1,51 @@
+services:
+  # API
+  api:
+    build: 
+      context: .
+      dockerfile: api/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      #End user does not have to configure these
+      - MONGODB_URL=mongodb://mongodb:27017/yourdb  
+      - MONGODB_DATABASE=yourdb
+      - MONGODB_COLLECTION=items
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+  
+  # MongoDB   
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"  # Only for host machine access
+    environment:
+      #This creates a default database so the enduser doesn't have to configure it manualy
+      MONGO_INITDB_DATABASE: yourdb
+    volumes:
+      - mongodb_data:/data/db
+      - ./api/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - app-network
+  
+  # Frontend 
+  frontend:
+    build: ./front-end
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - app-network
+
+# Define the network
+networks:
+  app-network:
+    #Custom docker bridge network
+    driver: bridge
+
+# Define volumes
+volumes:
+  mongodb_data:
