@@ -31,12 +31,30 @@
         <div id="items-list"></div>
         <div id="items-empty" class="empty-state">Loading items...</div>
     </section>
+    <section>
+        <h2>Predict Iris Class</h2>
+        <form id="predict-form">
+            <label for="sepal-length">Sepal Length</label>
+            <input id="sepal-length" name="sepal_length" type="number" step="0.1" required />
+
+            <label for="sepal-width">Sepal Width</label>
+            <input id="sepal-width" name="sepal_width" type="number" step="0.1" required />
+
+            <label for="petal-length">Petal Length</label>
+            <input id="petal-length" name="petal_length" type="number" step="0.1" required />
+
+            <label for="petal-width">Petal Width</label>
+            <input id="petal-width" name="petal_width" type="number" step="0.1" required />
+
+            <button class="primary" type="submit">Predict Class</button>
+    </section>
     <!--Below script Designed by me, implemented by Microsoft Copilot on 04/15/26.-->
     <script>
         const itemsList = document.getElementById('items-list');
         const itemsEmpty = document.getElementById('items-empty');
         const createForm = document.getElementById('create-form');
         const createMessage = document.getElementById('create-message');
+        const predictForm = document.getElementById('predict-form');
 
         async function fetchItems() {
             try {
@@ -223,6 +241,37 @@
             createItem(data);
         });
 
+        predictForm.addEventListener('submit', event => {
+            event.preventDefault();
+            const form = event.target;
+            const data = {
+                sepal_length: Number(form.sepal_length.value),
+                sepal_width: Number(form.sepal_width.value),
+                petal_length: Number(form.petal_length.value),
+                petal_width: Number(form.petal_width.value),
+            }
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(error => { throw new Error(error.detail || 'Prediction failed') });
+                }
+                return response.json();
+            })
+            .then(result => {
+                alert(`Predicted class: ${result.predicted_class}`);
+                form.reset();
+            })
+            .catch(error => {
+                console.error(error);
+                alert(`Prediction error: ${error.message}`);
+            });
+        });
         fetchItems();
     </script>
 </body>

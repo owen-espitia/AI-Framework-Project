@@ -1,11 +1,15 @@
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from models import Item
+from models import Item, PredictionRequest
+from model import SimpleClassifier
 from dal import MongoDAL
-
-dal = MongoDAL()
+import torch
+dal = None
 app = FastAPI()
+
+model = None
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,6 +18,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+@app.on_event("startup")
+async def startup_event():
+    global model, dal
+    dal = MongoDAL()
+    model_path = os.getenv("MODEL_PATH", "/main/simple_classifier.pth")
+    
+    if not os.path.exists(model_path):
+        raise RuntimeError(f"Model file not found at {model_path}")
+    
+    model = SimpleClassifier(input_size=4, hidden_size=10, num_classes=3)
+    model.load_state_dict(torch.load(model_path, weights_only=True))
+    model.eval()
+    print(f"Model loaded successfully from {model_path}")
 
 # Your endpoints here
 
@@ -55,3 +72,14 @@ def delete_item(item_id: str):
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete item: {str(e)}")
+
+@app.post("/predict")
+def predict(req: PredictionRequest):
+    # 1. Convert input to tensor
+    # 2. Run inference (model.eval(), torch.no_grad())
+    # 3. Return prediction as JSON
+    req_tensor = torch.tensor(req)
+    with torch.no_grad():
+        output = model(req_tensor)
+        predicted_class = torch.argmax(output, dim=1).item()
+    return {"predicted_class": predicted_class}
