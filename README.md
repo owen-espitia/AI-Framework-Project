@@ -115,6 +115,14 @@ docker-compose down -v
 - **Response:** Success message
 - **Status Code:** 200 or 404 if not found
 
+### POST `/predict`
+- **Description:** Predict Iris flower species based on measurements
+- **Body:** `{ "sepal_length": number, "sepal_width": number, "petal_length": number, "petal_width": number }`
+- **Response:** `{ "species": string, "confidence": number }`
+- **Species Options:** "Setosa", "Versicolor", "Virginica"
+- **Confidence Range:** 0.0 to 1.0 (confidence level as decimal)
+- **Status Code:** 200
+
 ## Technologies Used
 
 - **FastAPI** - Modern Python web framework for building APIs
