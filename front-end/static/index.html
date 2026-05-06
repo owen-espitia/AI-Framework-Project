@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Item Frontpage</title>
-    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
     <h1>Item Manager</h1>
@@ -47,6 +47,7 @@
             <input id="petal-width" name="petal_width" type="number" step="0.1" required />
 
             <button class="primary" type="submit">Predict Class</button>
+        </form>
     </section>
     <!--Below script Designed by me, implemented by Microsoft Copilot on 04/15/26.-->
     <script>
@@ -264,7 +265,7 @@
                 return response.json();
             })
             .then(result => {
-                alert(`Predicted class: ${result.predicted_class}`);
+                alert(`Predicted species: ${result.species}\nConfidence: ${(result.confidence * 100).toFixed(2)}%`);
                 form.reset();
             })
             .catch(error => {

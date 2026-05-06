@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from models import Item, PredictionRequest
-from model import SimpleClassifier
+from model_training import SimpleClassifier
 from dal import MongoDAL
 import torch
 dal = None
@@ -22,7 +22,7 @@ app.add_middleware(
 async def startup_event():
     global model, dal
     dal = MongoDAL()
-    model_path = os.getenv("MODEL_PATH", "/main/simple_classifier.pth")
+    model_path = os.getenv("MODEL_PATH", "/main/refined_simple_classifier.pth")
     
     if not os.path.exists(model_path):
         raise RuntimeError(f"Model file not found at {model_path}")
@@ -75,11 +75,20 @@ def delete_item(item_id: str):
 
 @app.post("/predict")
 def predict(req: PredictionRequest):
-    # 1. Convert input to tensor
-    # 2. Run inference (model.eval(), torch.no_grad())
-    # 3. Return prediction as JSON
-    req_tensor = torch.tensor(req)
+    # Map class indices to iris species names
+    species_names = ["Setosa", "Versicolor", "Virginica"]
+    
+    # Convert input to tensor
+    features = torch.tensor([[req.sepal_length, req.sepal_width, req.petal_length, req.petal_width]], dtype=torch.float32)
+    
+    # Run inference
     with torch.no_grad():
-        output = model(req_tensor)
+        output = model(features)
+        probabilities = torch.softmax(output, dim=1)
         predicted_class = torch.argmax(output, dim=1).item()
-    return {"predicted_class": predicted_class}
+        confidence = probabilities[0, predicted_class].item()
+    
+    return {
+        "species": species_names[predicted_class],
+        "confidence": round(confidence, 4)
+    }
