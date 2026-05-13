@@ -265,6 +265,7 @@
                 return response.json();
             })
             .then(result => {
+                console.log('front-end recieved prediction result:', result);
                 alert(`Predicted species: ${result.species}\nConfidence: ${(result.confidence * 100).toFixed(2)}%`);
                 form.reset();
             })

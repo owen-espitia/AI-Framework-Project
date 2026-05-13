@@ -9,6 +9,7 @@ A full-stack Item Management application built with **FastAPI**, **MongoDB**, an
 1. **API** (FastAPI) - Backend REST API running on port 8000
 2. **MongoDB** - Database service running on port 27017
 3. **Frontend** (Nginx) - Web UI served on port 3000
+4. **Model Service** (FastAPI) - ML model inference service running on port 8001
 
 ### Network:
 All services communicate via a custom Docker bridge network (`app-network`) for secure, isolated inter-service communication.
@@ -29,6 +30,8 @@ The application will be accessible at:
 - **API:** http://localhost:8000
 - **API Docs (Swagger):** http://localhost:8000/docs
 - **API Docs (ReDoc):** http://localhost:8000/redoc
+- **Model Service:** http://localhost:8001
+- **Model Service Health:** http://localhost:8001/health
 - **MongoDB:** mongodb://localhost:27017 (local access only)
 
 ### Stopping the Application
@@ -45,9 +48,17 @@ docker-compose down -v
 
 ```
 ├── api/
-│   ├── main.py           # FastAPI application and endpoints
-│   ├── dal.py            # Data Access Layer for MongoDB operations
-│   ├── models.py         # Pydantic models (Item definition)
+│   ├── main.py           # FastAPI application and PredictionRequest
+│   ├── model_training.py # ML model architecture (SimpleClassifier)
+│   ├── Dockerfile        # Docker build configuration for API
+│   └── init-mongo.js     # MongoDB initialization script
+├── model_service/
+│   ├── serve.py          # FastAPI model inference service
+│   ├── model_training.py # SimpleClassifier model definition
+│   ├── Dockerfile        # Docker build configuration for Model Service
+│   ├── requirements.txt   # Python dependencies for model service
+│   └── model/
+│       └── refined_simple_classifier.pth  # Trained PyTorch model
 │   ├── Dockerfile        # Docker build configuration for API
 │   └── init-mongo.js     # MongoDB initialization script
 ├── front-end/
@@ -60,14 +71,23 @@ docker-compose down -v
 ├── requirements.txt      # Python dependencies
 └── README.md            # This file
 ```
+Iris species prediction with confidence scores
+- Error handling and status messages
 
-## Key Features
+### Backend API
+- RESTful endpoints for item management
+- Integration with the Model Service for ML predictions
+- MongoDB integration for persistent data storage
+- Proper error handling with HTTP status codes
+- CORS enabled for cross-origin requests
+- Automatic API documentation with Swagger UI
 
-### Frontend
-- Clean, responsive HTML/CSS interface
-- Create, Read, Update, Delete (CRUD) operations for items
-- Real-time item list display
-- Forms for adding and editing items
+### Model Service
+- Standalone FastAPI microservice for ML inference
+- Loads a trained PyTorch SimpleClassifier model
+- Performs Iris species classification
+- Health check endpoint for service monitoring
+- Isolated on separate port (8001) with independent scaling
 - Error handling and status messages
 
 ### Backend API
@@ -104,7 +124,65 @@ docker-compose down -v
 
 ### PUT `/items/{item_id}`
 - **Description:** Update an existing item
-- **Parameters:** `item_id` (MongoDB ObjectId)
+- **Parameters:** `item_id` (MongoDB Objec
+
+### POST `/predict`
+- **Description:** Classify Iris flower species using ML model
+- **Body:** `{ "sepal_length": float, "sepal_width": float, "petal_length": float, "petal_width": float }`
+- **Response:** `{ "species": string, "confidence": float, "model": string }`
+- **Status Code:** 200 or 503 if model service is unavailable
+- **Example Request:**
+```jPyTorch** - Machine learning framework for model inference
+- **son
+{
+  "sepal_length": 5.1,
+  "sepal_width": 3.5,
+  "petal_length": 1.4,
+  "petal_width": 0.2
+}
+```
+- **Example Response:**
+```json
+{
+  "species": "Setosa",
+  "confidence": 0.98,
+  "model": "simple-classifier-v1"
+}
+```
+
+## MMicroservices Architecture
+The application now uses a microservices architecture with:
+- **API Service** - Handles CRUD operations and coordinates with other services
+- **Model Service** - Isolated ML inference service that can be scaled independently
+- Both services communicate via the Docker bridge network
+
+The Model Service:
+- Loads the trained PyTorch model on startup
+- Performs health checks to ensure model loading succeeded
+- Can be restarted independently without affecting other services
+- Implements proper error handling and service monitoring
+
+### Circular Import Fix
+The `models.py` file was created to resolve circular imports between `main.py` and `dal.py`. Both modules now import the `Item` model from `models.py`.
+
+### Nginx Proxy Configuration
+The frontend Nginx server proxies `/items` API requests to the backend API service using the Docker network's internal DNS naming (`http://api:8000`).
+
+- `MONGODB_COLLECTION` - Collection name (default: `items`)
+- `MODEL_PATH` - Path to the trained model file (default: `/app/model/refined_simple_classifier.pth`)
+### MongoDB Initialization
+The MongoDB container automatically initializes with:
+- A default database named `yourdb`
+- An `items` collection
+- Indexes on `name`, `price`, and compound fields
+- Sample data (Laptop, Mouse, Keyboard)
+
+### Model Service Healthcheck
+The model service includes a Docker healthcheck that:
+- Tests the `/health` endpoint every 10 seconds
+- Waits 30 seconds before starting health checks (startup grace period)
+- Requires 5 consecutive passes to mark as healthy
+- Is used as a dependency condition in Docker Compose
 - **Body:** `{ "name": string, "price": number, "description": string }`
 - **Response:** Updated item object
 - **Status Code:** 200 or 404 if not found

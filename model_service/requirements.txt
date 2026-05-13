@@ -1,1 +1,6 @@
 #Model's dependencies.
+torch==2.11
+numpy==2.3.0
+fastapi==0.135.3
+uvicorn==0.42.0
+requests==2.31.0
