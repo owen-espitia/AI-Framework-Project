@@ -12,7 +12,10 @@ services:
       - MONGODB_DATABASE=yourdb
       - MONGODB_COLLECTION=items
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_started
+      model-service:
+        condition: service_healthy
     networks:
       - app-network
   
@@ -40,6 +43,19 @@ services:
     networks:
       - app-network
 
+#Model Service
+  model-service:
+    build: ./model_service
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - app-network
 # Define the network
 networks:
   app-network:
