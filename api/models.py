@@ -11,3 +11,11 @@ class PredictionRequest(BaseModel):
     sepal_width: float
     petal_length: float
     petal_width: float
+
+class ChatRequest(BaseModel):
+    message: str
+    conversation_history: list = []
+
+class ChatResponse(BaseModel):
+    reply: str
+    conversation_history: list
