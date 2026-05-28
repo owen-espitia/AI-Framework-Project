@@ -150,7 +150,57 @@ Iris species prediction with confidence scores
 }
 ```
 
-## MMicroservices Architecture
+### POST `/chat`
+- **Description:** Chat with an AI assistant about inventory items
+- **Body:** `{ "message": string, "conversation_history": array }`
+  - `message`: User's current message
+  - `conversation_history`: Array of previous messages in format `[{"role": "user"/"assistant", "content": string}, ...]`
+- **Response:** `{ "reply": string, "conversation_history": array }`
+- **Status Code:** 200 or 500 if LLM service is unavailable
+- **Example Request:**
+```json
+{
+  "message": "What is our most expensive item?",
+  "conversation_history": []
+}
+```
+- **Example Response:**
+```json
+{
+  "reply": "Bzzzz... I must check the inventory for you! *flaps wings* The most expensive item costs $1299.99. Is there anything else I can help with?",
+  "conversation_history": [
+    {"role": "user", "content": "What is our most expensive item?"},
+    {"role": "assistant", "content": "Bzzzz... I must check the inventory for you! *flaps wings* The most expensive item costs $1299.99. Is there anything else I can help with?"}
+  ]
+}
+```
+
+### POST `/analyze`
+- **Description:** Analyze content and extract structured insights using AI
+- **Body:** `{ "content": string }`
+- **Response:** `{ "categories": array, "tags": array, "sentiment": string, "summary": string }`
+  - `categories`: List of applicable content categories
+  - `tags`: List of relevant tags
+  - `sentiment`: One of "positive", "negative", or "neutral"
+  - `summary`: One sentence summary of the content
+- **Status Code:** 200, 422 (invalid JSON response from LLM), or 500 (LLM service error)
+- **Example Request:**
+```json
+{
+  "content": "The new laptop is incredibly fast and the battery lasts all day. Best purchase this year."
+}
+```
+- **Example Response:**
+```json
+{
+  "categories": ["technology", "review"],
+  "tags": ["laptop", "performance", "battery"],
+  "sentiment": "positive",
+  "summary": "Highly positive review praising laptop speed and battery life."
+}
+```
+
+## Microservices Architecture
 The application now uses a microservices architecture with:
 - **API Service** - Handles CRUD operations and coordinates with other services
 - **Model Service** - Isolated ML inference service that can be scaled independently
