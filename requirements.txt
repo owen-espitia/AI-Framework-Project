@@ -21,4 +21,5 @@ websockets==16.0
 torch==2.11
 requests==2.31.0
 numpy==2.3.0
+ollama
 #scikit-learn

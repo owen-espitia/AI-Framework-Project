@@ -11,11 +11,14 @@ services:
       - MONGODB_URL=mongodb://mongodb:27017/yourdb  
       - MONGODB_DATABASE=yourdb
       - MONGODB_COLLECTION=items
+      - OLLAMA_URL=http://ollama:11434
     depends_on:
       mongodb:
         condition: service_started
-      model-service:
-        condition: service_healthy
+      # model-service:
+      #   condition: service_healthy
+      ollama:
+        condition: service_started
     networks:
       - app-network
   
@@ -43,19 +46,34 @@ services:
     networks:
       - app-network
 
-#Model Service
-  model-service:
-    build: ./model_service
+# #Model Service
+#   model-service:
+#     build: ./model_service
+#     ports:
+#       - "8001:8001"
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+#       interval: 10s
+#       timeout: 10s
+#       retries: 5
+#       start_period: 30s
+#     networks:
+#       - app-network
+
+  # LLM Service (Ollama)
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
     ports:
-      - "8001:8001"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
+      - "11434:11434"
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+      - ./start.sh:/start.sh
+    entrypoint: ["bin/sh", "/start.sh"]
     networks:
       - app-network
+
 # Define the network
 networks:
   app-network:
@@ -65,3 +83,4 @@ networks:
 # Define volumes
 volumes:
   mongodb_data:
+  ollama_data:

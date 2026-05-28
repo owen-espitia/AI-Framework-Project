@@ -32,23 +32,25 @@
         <div id="items-empty" class="empty-state">Loading items...</div>
     </section>
     <section>
-        <h2>Predict Iris Class</h2>
-        <form id="predict-form">
-            <label for="sepal-length">Sepal Length</label>
-            <input id="sepal-length" name="sepal_length" type="number" step="0.1" required />
-
-            <label for="sepal-width">Sepal Width</label>
-            <input id="sepal-width" name="sepal_width" type="number" step="0.1" required />
-
-            <label for="petal-length">Petal Length</label>
-            <input id="petal-length" name="petal_length" type="number" step="0.1" required />
-
-            <label for="petal-width">Petal Width</label>
-            <input id="petal-width" name="petal_width" type="number" step="0.1" required />
-
-            <button class="primary" type="submit">Predict Class</button>
-        </form>
+        <h2>Chat with AI</h2>
+        <div class="chat-container">
+            <div class="chat-messages" id="chat-messages"></div>
+            <div class="chat-input">
+                <input type="text" id="chat-input" placeholder="Type a message..." />
+                <button id="chat-send">Send</button>
+            </div>
+        </div>
     </section>
+
+    <section>
+        <h2>Analyze Content</h2>
+        <div class="analyze-container">
+            <textarea id="analyze-input" placeholder="Paste or type content to analyze..." rows="5"></textarea>
+            <button id="analyze-send" class="primary">Analyze</button>
+            <div id="analyze-results" class="analyze-results"></div>
+        </div>
+    </section>
+
     <!--Below script Designed by me, implemented by Microsoft Copilot on 04/15/26.-->
     <script>
         const itemsList = document.getElementById('items-list');
@@ -231,6 +233,57 @@
                 .replace(/'/g, '&#039;');
         }
 
+        // Chat
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const chatSend = document.getElementById('chat-send');
+        let conversationHistory = [];
+
+        function appendMessage(role, text) {
+            const div = document.createElement('div');
+            div.className = `message ${role === 'user' ? 'user' : 'bot'}`;
+            div.textContent = text;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return div;
+        }
+
+        async function sendChatMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            chatInput.value = '';
+            chatSend.disabled = true;
+            appendMessage('user', text);
+            const loadingDiv = appendMessage('bot', '...');
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text, conversation_history: conversationHistory }),
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || 'Chat request failed');
+                }
+                const data = await response.json();
+                loadingDiv.textContent = data.reply;
+                conversationHistory = data.conversation_history;
+            } catch (error) {
+                loadingDiv.textContent = `Error: ${error.message}`;
+                console.error(error);
+            } finally {
+                chatSend.disabled = false;
+                chatInput.focus();
+            }
+        }
+
+        chatSend.addEventListener('click', sendChatMessage);
+        chatInput.addEventListener('keydown', event => {
+            if (event.key === 'Enter') sendChatMessage();
+        });
+
         createForm.addEventListener('submit', event => {
             event.preventDefault();
             const form = event.target;
@@ -242,38 +295,106 @@
             createItem(data);
         });
 
-        predictForm.addEventListener('submit', event => {
-            event.preventDefault();
-            const form = event.target;
-            const data = {
-                sepal_length: Number(form.sepal_length.value),
-                sepal_width: Number(form.sepal_width.value),
-                petal_length: Number(form.petal_length.value),
-                petal_width: Number(form.petal_width.value),
-            }
-            fetch('/predict', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            })
-            .then(response => {
+        // predictForm.addEventListener('submit', event => {
+        //     event.preventDefault();
+        //     const form = event.target;
+        //     const data = {
+        //         sepal_length: Number(form.sepal_length.value),
+        //         sepal_width: Number(form.sepal_width.value),
+        //         petal_length: Number(form.petal_length.value),
+        //         petal_width: Number(form.petal_width.value),
+        //     }
+        //     fetch('/predict', {
+        //         method: 'POST',
+        //         headers: {
+        //             'Content-Type': 'application/json',
+        //         },
+        //         body: JSON.stringify(data),
+        //     })
+        //     .then(response => {
+        //         if (!response.ok) {
+        //             return response.json().then(error => { throw new Error(error.detail || 'Prediction failed') });
+        //         }
+        //         return response.json();
+        //     })
+        //     .then(result => {
+        //         console.log('front-end recieved prediction result:', result);
+        //         alert(`Predicted species: ${result.species}\nConfidence: ${(result.confidence * 100).toFixed(2)}%`);
+        //         form.reset();
+        //     })
+        //     .catch(error => {
+        //         console.error(error);
+        //         alert(`Prediction error: ${error.message}`);
+        //     });
+        // });
+        
+        // Analyze content functionality
+        const analyzeInput = document.getElementById('analyze-input');
+        const analyzeSend = document.getElementById('analyze-send');
+        const analyzeResults = document.getElementById('analyze-results');
+
+        function displayAnalysisResults(data) {
+            analyzeResults.innerHTML = `
+                <h3>Analysis Results</h3>
+                <div class="result-section">
+                    <div class="result-label">Sentiment</div>
+                    <div class="sentiment ${data.sentiment}">${data.sentiment.toUpperCase()}</div>
+                </div>
+                <div class="result-section">
+                    <div class="result-label">Categories</div>
+                    <div class="categories-container">
+                        ${data.categories.map(cat => `<span class="category">${cat}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="result-section">
+                    <div class="result-label">Tags</div>
+                    <div class="tags-container">
+                        ${data.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="result-section">
+                    <div class="result-label">Summary</div>
+                    <div class="summary-text">${data.summary}</div>
+                </div>
+            `;
+            analyzeResults.classList.add('active');
+        }
+
+        async function sendAnalysis() {
+            const text = analyzeInput.value.trim();
+            if (!text) return;
+
+            analyzeSend.disabled = true;
+            analyzeResults.innerHTML = '<div class="loading">Analyzing content...</div>';
+            analyzeResults.classList.add('active');
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: text }),
+                });
                 if (!response.ok) {
-                    return response.json().then(error => { throw new Error(error.detail || 'Prediction failed') });
+                    const err = await response.json();
+                    throw new Error(err.detail || 'Analysis request failed');
                 }
-                return response.json();
-            })
-            .then(result => {
-                console.log('front-end recieved prediction result:', result);
-                alert(`Predicted species: ${result.species}\nConfidence: ${(result.confidence * 100).toFixed(2)}%`);
-                form.reset();
-            })
-            .catch(error => {
+                const data = await response.json();
+                displayAnalysisResults(data);
+            } catch (error) {
+                analyzeResults.innerHTML = `<div class="loading" style="color: red;">Error: ${error.message}</div>`;
                 console.error(error);
-                alert(`Prediction error: ${error.message}`);
-            });
+            } finally {
+                analyzeSend.disabled = false;
+            }
+        }
+
+        analyzeSend.addEventListener('click', sendAnalysis);
+        analyzeInput.addEventListener('keydown', event => {
+            if (event.key === 'Enter' && event.ctrlKey) {
+                sendAnalysis();
+            }
         });
+
         fetchItems();
     </script>
 </body>
