@@ -19,3 +19,6 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     conversation_history: list
+
+class AnalyzeRequest(BaseModel):
+    content: str  # e.g., item descriptions, user text, etc.

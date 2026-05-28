@@ -42,6 +42,15 @@
         </div>
     </section>
 
+    <section>
+        <h2>Analyze Content</h2>
+        <div class="analyze-container">
+            <textarea id="analyze-input" placeholder="Paste or type content to analyze..." rows="5"></textarea>
+            <button id="analyze-send" class="primary">Analyze</button>
+            <div id="analyze-results" class="analyze-results"></div>
+        </div>
+    </section>
+
     <!--Below script Designed by me, implemented by Microsoft Copilot on 04/15/26.-->
     <script>
         const itemsList = document.getElementById('items-list');
@@ -318,6 +327,74 @@
         //         alert(`Prediction error: ${error.message}`);
         //     });
         // });
+        
+        // Analyze content functionality
+        const analyzeInput = document.getElementById('analyze-input');
+        const analyzeSend = document.getElementById('analyze-send');
+        const analyzeResults = document.getElementById('analyze-results');
+
+        function displayAnalysisResults(data) {
+            analyzeResults.innerHTML = `
+                <h3>Analysis Results</h3>
+                <div class="result-section">
+                    <div class="result-label">Sentiment</div>
+                    <div class="sentiment ${data.sentiment}">${data.sentiment.toUpperCase()}</div>
+                </div>
+                <div class="result-section">
+                    <div class="result-label">Categories</div>
+                    <div class="categories-container">
+                        ${data.categories.map(cat => `<span class="category">${cat}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="result-section">
+                    <div class="result-label">Tags</div>
+                    <div class="tags-container">
+                        ${data.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="result-section">
+                    <div class="result-label">Summary</div>
+                    <div class="summary-text">${data.summary}</div>
+                </div>
+            `;
+            analyzeResults.classList.add('active');
+        }
+
+        async function sendAnalysis() {
+            const text = analyzeInput.value.trim();
+            if (!text) return;
+
+            analyzeSend.disabled = true;
+            analyzeResults.innerHTML = '<div class="loading">Analyzing content...</div>';
+            analyzeResults.classList.add('active');
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: text }),
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || 'Analysis request failed');
+                }
+                const data = await response.json();
+                displayAnalysisResults(data);
+            } catch (error) {
+                analyzeResults.innerHTML = `<div class="loading" style="color: red;">Error: ${error.message}</div>`;
+                console.error(error);
+            } finally {
+                analyzeSend.disabled = false;
+            }
+        }
+
+        analyzeSend.addEventListener('click', sendAnalysis);
+        analyzeInput.addEventListener('keydown', event => {
+            if (event.key === 'Enter' && event.ctrlKey) {
+                sendAnalysis();
+            }
+        });
+
         fetchItems();
     </script>
 </body>

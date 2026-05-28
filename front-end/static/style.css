@@ -130,3 +130,117 @@ body {
         .chat-input button {
             padding: 8px 12px;
         }
+
+        .analyze-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .analyze-container textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: Arial, sans-serif;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        .analyze-results {
+            margin-top: 16px;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #fafafa;
+            display: none;
+        }
+
+        .analyze-results.active {
+            display: block;
+        }
+
+        .analyze-results h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 8px;
+        }
+
+        .result-section {
+            margin-bottom: 12px;
+        }
+
+        .result-label {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 6px;
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 12px;
+        }
+
+        .categories-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .category {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .sentiment {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .sentiment.positive {
+            background: #28a745;
+            color: white;
+        }
+
+        .sentiment.negative {
+            background: #dc3545;
+            color: white;
+        }
+
+        .sentiment.neutral {
+            background: #6c757d;
+            color: white;
+        }
+
+        .summary-text {
+            font-style: italic;
+            color: #555;
+            padding: 8px;
+            background: #e9ecef;
+            border-left: 3px solid #007bff;
+            border-radius: 3px;
+        }
+
+        .loading {
+            color: #666;
+            font-style: italic;
+            text-align: center;
+        }
