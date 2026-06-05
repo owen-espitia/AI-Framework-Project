@@ -205,18 +205,84 @@ The agent decides to call `create_item`. The endpoint pauses and returns:
 ```
 The frontend shows the confirmation modal. User clicks **Approve**.
 
-**Step 3 — create_item (re-run with auto_confirm_create: true)**
-```json
-{
-  "tool": "create_item",
-  "input": {
-    "name": "Mechanical Keyboard",
-    "price": 89.99,
-    "description": "Full-size mechanical keyboard with Cherry MX switches and RGB backlight."
-  },
-  "output": "{\"success\": true, \"id\": \"6649f3a2c1e4b900123abc01\", \"name\": \"Mechanical Keyboard\"}"
-}
-```
+## MMicroservices Architecture
+The application now uses a microservices architecture with:
+- **API Service** - Handles CRUD operations and coordinates with other services
+- **Model Service** - Isolated ML inference service that can be scaled independently
+- Both services communicate via the Docker bridge network
+
+The Model Service:
+- Loads the trained PyTorch model on startup
+- Performs health checks to ensure model loading succeeded
+- Can be restarted independently without affecting other services
+- Implements proper error handling and service monitoring
+
+### Circular Import Fix
+The `models.py` file was created to resolve circular imports between `main.py` and `dal.py`. Both modules now import the `Item` model from `models.py`.
+
+### Nginx Proxy Configuration
+The frontend Nginx server proxies `/items` API requests to the backend API service using the Docker network's internal DNS naming (`http://api:8000`).
+
+- `MONGODB_COLLECTION` - Collection name (default: `items`)
+- `MODEL_PATH` - Path to the trained model file (default: `/app/model/refined_simple_classifier.pth`)
+### MongoDB Initialization
+The MongoDB container automatically initializes with:
+- A default database named `yourdb`
+- An `items` collection
+- Indexes on `name`, `price`, and compound fields
+- Sample data (Laptop, Mouse, Keyboard)
+
+### Model Service Healthcheck
+The model service includes a Docker healthcheck that:
+- Tests the `/health` endpoint every 10 seconds
+- Waits 30 seconds before starting health checks (startup grace period)
+- Requires 5 consecutive passes to mark as healthy
+- Is used as a dependency condition in Docker Compose
+- **Body:** `{ "name": string, "price": number, "description": string }`
+- **Response:** Updated item object
+- **Status Code:** 200 or 404 if not found
+
+### DELETE `/items/{item_id}`
+- **Description:** Delete an item
+- **Parameters:** `item_id` (MongoDB ObjectId)
+- **Response:** Success message
+- **Status Code:** 200 or 404 if not found
+
+### POST `/predict`
+- **Description:** Predict Iris flower species based on measurements
+- **Body:** `{ "sepal_length": number, "sepal_width": number, "petal_length": number, "petal_width": number }`
+- **Response:** `{ "species": string, "confidence": number }`
+- **Species Options:** "Setosa", "Versicolor", "Virginica"
+- **Confidence Range:** 0.0 to 1.0 (confidence level as decimal)
+- **Status Code:** 200
+
+## Technologies Used
+
+- **FastAPI** - Modern Python web framework for building APIs
+- **Pydantic** - Data validation using Python type annotations
+- **MongoDB** - NoSQL document database
+- **PyMongo** - MongoDB driver for Python
+- **Nginx** - Reverse proxy and web server
+- **Docker & Docker Compose** - Containerization and orchestration
+- **Uvicorn** - ASGI server for FastAPI
+
+## Development Notes
+
+### Build Context
+The API Dockerfile uses the repository root as build context, allowing it to access files from both the `api/` and `requirements.txt`.
+
+### Circular Import Fix
+The `models.py` file was created to resolve circular imports between `main.py` and `dal.py`. Both modules now import the `Item` model from `models.py`.
+
+### Nginx Proxy Configuration
+The frontend Nginx server proxies `/items` API requests to the backend API service using the Docker network's internal DNS naming (`http://api:8000`).
+
+### MongoDB Initialization
+The MongoDB container automatically initializes with:
+- A default database named `yourdb`
+- An `items` collection
+- Indexes on `name`, `price`, and compound fields
+- Sample data (Laptop, Mouse, Keyboard)
 
 **Final response**
 ```json
@@ -241,13 +307,8 @@ The frontend shows the confirmation modal. User clicks **Approve**.
 | Frontend | Vanilla JS, Nginx |
 | Containerization | Docker, Docker Compose |
 
-## Environment Variables
-
-Set in `docker-compose.yml`:
-
-| Variable | Default | Description |
-|---|---|---|
-| `MONGODB_URL` | `mongodb://mongodb:27017` | MongoDB connection string |
-| `MONGODB_DATABASE` | `yourdb` | Database name |
-| `MONGODB_COLLECTION` | `items` | Collection name |
-| `OLLAMA_URL` | `http://ollama:11434` | Ollama service URL |
+## Notes
+### requests_playground:
+  - This is a python script that pings the smollm2 ai model in a docker container. The endpoint exposed is : "http://localhost:12434/engines/v1/chat/completions"
+  The response to the test query: 'message': {'role': 'assistant', 'content': 'Docker is a containerization tool that helps package and deploy applications by providing a lightweight virtualization platform that enables running multiple applications on top of a single host.'}
+# Note: This README has been generated by Microsoft Copilot based on the contents of the project.
