@@ -171,7 +171,7 @@ def _rag_query(query: str) -> dict:
     if not items:
         return {"answer": "The inventory is empty.", "relevant_items": []}
 
-    corpus = [f"{item['name']} {item['description']}" for item in items]
+    corpus = [f"{item.get('name', '')} {item.get('description', '')}" for item in items]
 
     try:
         vectorizer = TfidfVectorizer(stop_words='english', min_df=1)
@@ -188,7 +188,7 @@ def _rag_query(query: str) -> dict:
         return {"answer": "No relevant items found for your query.", "relevant_items": []}
 
     context = "\n".join(
-        [f"- {i['name']} (${i['price']}): {i['description']}" for i in relevant]
+        [f"- {i.get('name', '?')} (${i.get('price', '?')}): {i.get('description', '')}" for i in relevant]
     )
 
     client = ollama.Client(host=OLLAMA_URL)
@@ -282,7 +282,10 @@ MAX_AGENT_STEPS = 10
 def _tool_search_items(query: str) -> str:
     items = dal.read_items()
     q = query.lower()
-    matches = [i for i in items if q in i['name'].lower() or q in i['description'].lower()]
+    matches = [
+        i for i in items
+        if q in str(i.get('name', '')).lower() or q in str(i.get('description', '')).lower()
+    ]
     if not matches:
         return json.dumps({"found": 0, "items": [], "message": f"No items found matching '{query}'"})
     return json.dumps({"found": len(matches), "items": matches})
@@ -350,10 +353,11 @@ def agent(request: AgentRequest):
         {
             "role": "system",
             "content": (
-                "You are an inventory management agent. Use your tools to complete tasks. "
-                "Use search_items to find existing items, create_item to add new ones, "
-                "and query_knowledge to answer inventory questions. "
-                "Always search before creating to avoid duplicates. Be concise."
+                "You are an inventory management agent. "
+                "You MUST call tools to perform actions — never describe an action in text instead of calling it. "
+                "To find items call search_items. To add an item call create_item. To answer questions call query_knowledge. "
+                "Always call search_items before create_item to check for duplicates. "
+                "When you have finished the task, reply with a short summary and no tool calls."
             )
         },
         {"role": "user", "content": request.task}

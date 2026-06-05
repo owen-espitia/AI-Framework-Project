@@ -472,52 +472,55 @@
 
             agentRunBtn.disabled = true;
             agentStatus.classList.remove('hidden');
+            agentStepsEl.innerHTML = '';
+            agentTrace.classList.add('hidden');
+            agentResult.classList.add('hidden');
 
-            if (!autoConfirmCreate) {
-                agentStepsEl.innerHTML = '';
-                agentTrace.classList.add('hidden');
-                agentResult.classList.add('hidden');
-            }
-
+            // Isolate network errors in their own try/catch so that the modal
+            // path below can never be silently swallowed by the catch handler.
+            let data;
             try {
                 const resp = await fetch('/agent', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({task, auto_confirm_create: autoConfirmCreate})
                 });
-
                 if (!resp.ok) {
                     const err = await resp.json();
                     throw new Error(err.detail || 'Agent request failed');
                 }
-
-                const data = await resp.json();
-
-                (data.steps || []).forEach(appendStep);
-
-                if (data.status === 'needs_confirmation') {
-                    agentStatus.classList.add('hidden');
-                    agentRunBtn.disabled = false;
-                    showConfirmModal(data.pending_action);
-                    return;
-                }
-
-                agentResult.classList.remove('hidden');
-                agentResultText.textContent = data.status === 'max_steps_reached'
-                    ? '⚠️ ' + data.result
-                    : data.result;
-
-                // Refresh item list if the agent created something
-                if ((data.steps || []).some(s => s.tool === 'create_item')) {
-                    fetchItems();
-                }
-
+                data = await resp.json();
             } catch (err) {
                 agentResult.classList.remove('hidden');
                 agentResultText.textContent = 'Error: ' + err.message;
-            } finally {
                 agentRunBtn.disabled = false;
                 agentStatus.classList.add('hidden');
+                return;
+            }
+
+            // Response processing happens outside try/catch from here on.
+            agentRunBtn.disabled = false;
+            agentStatus.classList.add('hidden');
+
+            (data.steps || []).forEach(appendStep);
+
+            if (data.status === 'needs_confirmation') {
+                if (data.pending_action) {
+                    showConfirmModal(data.pending_action);
+                } else {
+                    agentResult.classList.remove('hidden');
+                    agentResultText.textContent = 'Agent needs confirmation but returned no action details. Please try again.';
+                }
+                return;
+            }
+
+            agentResult.classList.remove('hidden');
+            agentResultText.textContent = data.status === 'max_steps_reached'
+                ? '⚠️ ' + data.result
+                : data.result;
+
+            if ((data.steps || []).some(s => s.tool === 'create_item')) {
+                fetchItems();
             }
         }
 
