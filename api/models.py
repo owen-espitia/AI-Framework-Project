@@ -22,3 +22,10 @@ class ChatResponse(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     content: str  # e.g., item descriptions, user text, etc.
+
+class AskRequest(BaseModel):
+    query: str
+
+class AgentRequest(BaseModel):
+    task: str
+    auto_confirm_create: bool = False
