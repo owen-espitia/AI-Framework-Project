@@ -244,3 +244,144 @@ body {
             font-style: italic;
             text-align: center;
         }
+
+        /* ── Agent ────────────────────────────────────────────────────────── */
+        .hidden { display: none !important; }
+
+        .agent-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .agent-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #555;
+            font-style: italic;
+            padding: 6px 0;
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 3px solid #ddd;
+            border-top-color: #007bff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+            display: inline-block;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .agent-trace {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 14px;
+            background: #fafafa;
+        }
+
+        .agent-trace h3 {
+            margin: 0 0 12px 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 6px;
+        }
+
+        .agent-step {
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .step-header {
+            background: #007bff;
+            padding: 6px 12px;
+        }
+
+        .step-tool-name {
+            color: white;
+            font-weight: bold;
+            font-size: 13px;
+            font-family: monospace;
+        }
+
+        .step-body {
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .step-row { font-size: 13px; }
+
+        .step-row code {
+            display: block;
+            background: #f4f4f4;
+            padding: 6px 8px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .step-output-text { word-break: break-word; }
+
+        .agent-result {
+            border: 1px solid #28a745;
+            border-radius: 6px;
+            padding: 14px;
+            background: #f0fff4;
+        }
+
+        .agent-result h3 {
+            margin: 0 0 8px 0;
+            color: #28a745;
+        }
+
+        .agent-result p {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+
+        /* ── Confirmation modal ───────────────────────────────────────────── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-box {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 480px;
+            width: 90%;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+        }
+
+        .modal-box h3 { margin: 0 0 8px 0; }
+
+        .confirm-args {
+            background: #f4f4f4;
+            border-radius: 4px;
+            padding: 10px;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin: 8px 0 0;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }

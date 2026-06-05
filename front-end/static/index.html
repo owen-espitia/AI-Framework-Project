@@ -43,6 +43,41 @@
     </section>
 
     <section>
+        <h2>AI Agent</h2>
+        <div class="agent-container">
+            <textarea id="agent-task" rows="3" placeholder="Describe a task, e.g. 'Find all items about keyboards. If there are none, create one.'"></textarea>
+            <button id="agent-run" class="primary">Run Agent</button>
+
+            <div id="agent-status" class="agent-status hidden">
+                <span class="spinner"></span> Agent is working...
+            </div>
+
+            <div id="agent-trace" class="agent-trace hidden">
+                <h3>Reasoning Trace</h3>
+                <div id="agent-steps"></div>
+            </div>
+
+            <div id="agent-result" class="agent-result hidden">
+                <h3>Result</h3>
+                <p id="agent-result-text"></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Confirmation modal for destructive agent actions -->
+    <div id="confirm-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3>Confirm Agent Action</h3>
+            <p>The agent wants to perform the following action. Approve to continue, or deny to cancel.</p>
+            <div id="confirm-details"></div>
+            <div class="modal-actions">
+                <button id="confirm-approve" class="primary">Approve</button>
+                <button id="confirm-deny" class="danger">Deny</button>
+            </div>
+        </div>
+    </div>
+
+    <section>
         <h2>Analyze Content</h2>
         <div class="analyze-container">
             <textarea id="analyze-input" placeholder="Paste or type content to analyze..." rows="5"></textarea>
@@ -396,6 +431,118 @@
         });
 
         fetchItems();
+
+        // ── Agent ──────────────────────────────────────────────────────────────
+        const agentTask       = document.getElementById('agent-task');
+        const agentRunBtn     = document.getElementById('agent-run');
+        const agentStatus     = document.getElementById('agent-status');
+        const agentTrace      = document.getElementById('agent-trace');
+        const agentStepsEl    = document.getElementById('agent-steps');
+        const agentResult     = document.getElementById('agent-result');
+        const agentResultText = document.getElementById('agent-result-text');
+        const confirmModal    = document.getElementById('confirm-modal');
+        const confirmDetails  = document.getElementById('confirm-details');
+        const confirmApprove  = document.getElementById('confirm-approve');
+        const confirmDeny     = document.getElementById('confirm-deny');
+
+        function appendStep(step) {
+            const div = document.createElement('div');
+            div.className = 'agent-step';
+            div.innerHTML = `
+                <div class="step-header">
+                    <span class="step-tool-name">${escapeHtml(step.tool)}</span>
+                </div>
+                <div class="step-body">
+                    <div class="step-row">
+                        <strong>Input:</strong>
+                        <code>${escapeHtml(JSON.stringify(step.input, null, 2))}</code>
+                    </div>
+                    <div class="step-row">
+                        <strong>Output:</strong>
+                        <span class="step-output-text">${escapeHtml(step.output)}</span>
+                    </div>
+                </div>`;
+            agentStepsEl.appendChild(div);
+            agentTrace.classList.remove('hidden');
+        }
+
+        async function runAgent(autoConfirmCreate) {
+            const task = agentTask.value.trim();
+            if (!task) return;
+
+            agentRunBtn.disabled = true;
+            agentStatus.classList.remove('hidden');
+
+            if (!autoConfirmCreate) {
+                agentStepsEl.innerHTML = '';
+                agentTrace.classList.add('hidden');
+                agentResult.classList.add('hidden');
+            }
+
+            try {
+                const resp = await fetch('/agent', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({task, auto_confirm_create: autoConfirmCreate})
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || 'Agent request failed');
+                }
+
+                const data = await resp.json();
+
+                (data.steps || []).forEach(appendStep);
+
+                if (data.status === 'needs_confirmation') {
+                    agentStatus.classList.add('hidden');
+                    agentRunBtn.disabled = false;
+                    showConfirmModal(data.pending_action);
+                    return;
+                }
+
+                agentResult.classList.remove('hidden');
+                agentResultText.textContent = data.status === 'max_steps_reached'
+                    ? '⚠️ ' + data.result
+                    : data.result;
+
+                // Refresh item list if the agent created something
+                if ((data.steps || []).some(s => s.tool === 'create_item')) {
+                    fetchItems();
+                }
+
+            } catch (err) {
+                agentResult.classList.remove('hidden');
+                agentResultText.textContent = 'Error: ' + err.message;
+            } finally {
+                agentRunBtn.disabled = false;
+                agentStatus.classList.add('hidden');
+            }
+        }
+
+        function showConfirmModal(pendingAction) {
+            confirmDetails.innerHTML = `
+                <p><strong>Tool:</strong> <code>${escapeHtml(pendingAction.tool)}</code></p>
+                <pre class="confirm-args">${escapeHtml(JSON.stringify(pendingAction.args, null, 2))}</pre>`;
+            confirmModal.classList.remove('hidden');
+
+            confirmApprove.onclick = () => {
+                confirmModal.classList.add('hidden');
+                runAgent(true);
+            };
+
+            confirmDeny.onclick = () => {
+                confirmModal.classList.add('hidden');
+                agentResult.classList.remove('hidden');
+                agentResultText.textContent = 'Action denied by user. Task cancelled.';
+            };
+        }
+
+        agentRunBtn.addEventListener('click', () => runAgent(false));
+        agentTask.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && e.ctrlKey) runAgent(false);
+        });
     </script>
 </body>
 </html>
